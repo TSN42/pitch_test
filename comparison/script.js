@@ -4,7 +4,7 @@ let frequency1; // 音1の周波数
 let frequency2; // 音2の周波数
 let isSecondSoundHigher; // 音2が音1より高いか (true/false)
 let isPlaying = false; // 再生中フラグ
-let currentCents = 100; // 初期セント差
+let currentCents = 50; // 初期セント差
 const minCents = 1;
 const maxCents = 200;
 const soundDuration = 0.8; // 音の長さ (秒)
@@ -180,7 +180,7 @@ function updateDifficulty(isCorrect, responseTime, totalPlayCount) {
 
             // 回答時間と再生回数で微調整
             if (responseTime < fastResponseThreshold && totalPlayCount <= fewPlaysThreshold) {
-                difficultyMultiplier = 0.80; // 速く少ない再生回数で正解 -> もっと難しく
+                difficultyMultiplier = 0.60; // 速く少ない再生回数で正解 -> もっと難しく
                 console.log("Difficulty up significantly (fast/few plays)");
             } else if (responseTime > slowResponseThreshold || totalPlayCount > manyPlaysThreshold) {
                 difficultyMultiplier = 0.90; // 遅いか多い再生回数で正解 -> 上昇幅を抑える
@@ -191,7 +191,7 @@ function updateDifficulty(isCorrect, responseTime, totalPlayCount) {
             correctStreak = 0; // 難易度変更したので連続カウントリセット
         } else {
             // 連続正解条件を満たしていない場合は難易度変更なし
-            difficultyMultiplier = 1.0;
+            difficultyMultiplier = 0.95;
             console.log(`Correct, but streak (${correctStreak}/${requiredCorrectStreak}) not met. No difficulty change.`);
         }
     } else { // 不正解の場合

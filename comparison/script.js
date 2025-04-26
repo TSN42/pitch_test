@@ -12,11 +12,16 @@ const baseFrequencyMin = 261.63; // C4
 const baseFrequencyMax = 523.25; // C5
 let correctStreak = 0;
 const requiredCorrectStreak = 2;
-const maxTrials = 15; // テストの最大試行回数
+const maxTrials = 20; // テストの最大試行回数
 let trialCount = 0;
 let testResults = []; // テスト結果を保存する配列
 let freq1Played = false; // 音1が再生されたか
 let freq2Played = false; // 音2が再生されたか
+
+// --- 追加: 計測用変数 ---
+let trialStartTime = null; // 回答時間計測の開始時刻
+let playCount1 = 0;     // 音1の再生回数カウンター
+let playCount2 = 0;     // 音2の再生回数カウンター
 
 // --- DOM要素の取得 ---
 const playFreq1Button = document.getElementById('playFreq1');
@@ -43,7 +48,7 @@ async function playSound(frequency, duration) {
     if (!audioContext || isPlaying) return;
 
     isPlaying = true;
-    disableAllButtons(); // 再生中は全ての操作を一旦無効化
+    disableAllButtons();
 
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -81,6 +86,9 @@ function setupNextTrial() {
     // 状態リセット
     freq1Played = false;
     freq2Played = false;
+    playCount1 = 0; // 再生回数リセット
+    playCount2 = 0;
+    trialStartTime = null; // 開始時刻リセット
     feedbackDisplay.textContent = '';
     feedbackDisplay.className = '';
     difficultyDisplay.textContent = currentCents.toFixed(1);
@@ -88,21 +96,15 @@ function setupNextTrial() {
 
     // ボタンの状態を初期化
     playFreq1Button.disabled = false;
-    playFreq2Button.disabled = true; // 音1を再生するまで無効
-    higherButton.disabled = true;   // 音2を再生するまで無効
-    lowerButton.disabled = true;    // 音2を再生するまで無効
-    // 前回のフィードバック用クラスを削除
+    playFreq2Button.disabled = true;
+    higherButton.disabled = true;
+    lowerButton.disabled = true;
     higherButton.classList.remove('feedback-correct', 'feedback-incorrect', 'feedback-show-correct');
     lowerButton.classList.remove('feedback-correct', 'feedback-incorrect', 'feedback-show-correct');
 
-
-    // 1. 音1の周波数を決定
+    // 周波数設定
     frequency1 = baseFrequencyMin + Math.random() * (baseFrequencyMax - baseFrequencyMin);
-
-    // 2. 音2が高いか低いかをランダムに決定
     isSecondSoundHigher = Math.random() < 0.5;
-
-    // 3. 音2の周波数を計算
     const centsDifference = isSecondSoundHigher ? currentCents : -currentCents;
     frequency2 = calculateFrequency(frequency1, centsDifference);
 
@@ -112,11 +114,19 @@ function setupNextTrial() {
 
 // --- 回答ボタン処理 ---
 function handleAnswer(userChoseHigher) {
-    if (!freq1Played || !freq2Played || isPlaying || trialCount >= maxTrials) return;
+    // 回答可能条件をチェック (trialStartTimeがnullでないことも確認)
+    if (!freq1Played || !freq2Played || isPlaying || trialCount >= maxTrials || trialStartTime === null) return;
 
+    const responseTime = performance.now() - trialStartTime; // 回答時間を計算
+    const totalPlayCount = playCount1 + playCount2; // 合計再生回数を計算
     const isCorrect = (userChoseHigher === isSecondSoundHigher);
 
-    // 結果を記録
+    // デバッグログ
+    // console.log(`Answered: ${userChoseHigher ? 'Higher' : 'Lower'}, Correct: ${isCorrect}`);
+    // console.log(`Response Time: ${responseTime.toFixed(0)} ms, Play Count: ${totalPlayCount}`);
+
+
+    // 結果を記録 (responseTime, playCount を追加)
     testResults.push({
         trial: trialCount + 1,
         cents: currentCents,
@@ -124,52 +134,89 @@ function handleAnswer(userChoseHigher) {
         freq1: frequency1,
         freq2: frequency2,
         actualRelation: isSecondSoundHigher ? 'Higher' : 'Lower',
-        userChoice: userChoseHigher ? 'Higher' : 'Lower'
+        userChoice: userChoseHigher ? 'Higher' : 'Lower',
+        responseTime: responseTime, // 回答時間
+        playCount: totalPlayCount    // 再生回数
     });
 
     // フィードバック表示
     feedbackDisplay.textContent = isCorrect ? '正解！' : '不正解...';
     feedbackDisplay.className = isCorrect ? 'correct' : 'incorrect';
-
-    // 回答ボタンに一時的な色付け
     const chosenButton = userChoseHigher ? higherButton : lowerButton;
     const correctButton = isSecondSoundHigher ? higherButton : lowerButton;
-
     chosenButton.classList.add(isCorrect ? 'feedback-correct' : 'feedback-incorrect');
     if (!isCorrect) {
-        // 不正解の場合、正解だった方のボタンも示す（オプション）
         correctButton.classList.add('feedback-show-correct');
     }
 
-    // 難易度調整
-    updateDifficulty(isCorrect);
+    // 難易度調整 (回答時間と再生回数を渡す)
+    updateDifficulty(isCorrect, responseTime, totalPlayCount);
 
     // 試行回数をインクリメント
     trialCount++;
 
-    // ボタンを一時的に無効化
+    // ボタンを一時的に無効化 & 少し待ってから次の試行へ
     disableAllButtons();
-
-    // 少し待ってから次の試行へ
     setTimeout(() => {
         setupNextTrial();
-    }, 1500); // 1.5秒待つ
+    }, 1500);
 }
 
-// --- 難易度調整ロジック ---
-function updateDifficulty(isCorrect) {
+// --- 難易度調整ロジック (応答時間・再生回数を考慮) ---
+function updateDifficulty(isCorrect, responseTime, totalPlayCount) {
+    // 閾値の設定 (これらの値は調整可能)
+    const fastResponseThreshold = 1500; // 1.5秒以内なら速い
+    const slowResponseThreshold = 4000; // 4秒以上なら遅い
+    const fewPlaysThreshold = 2;       // 合計再生回数2回 (各1回) なら少ない
+    const manyPlaysThreshold = 4;      // 合計再生回数5回以上なら多い
+
+    let difficultyMultiplier = 1.0; // 難易度調整の基本係数（セント差に乗算）
+
     if (isCorrect) {
         correctStreak++;
+        // 連続正解条件を満たした場合のみ難易度を上げる
         if (correctStreak >= requiredCorrectStreak) {
-            currentCents = Math.max(minCents, currentCents * 0.85); // 難易度アップ
-            correctStreak = 0;
+            difficultyMultiplier = 0.85; // 基本の難易度上昇率 (セント差を減らす)
+
+            // 回答時間と再生回数で微調整
+            if (responseTime < fastResponseThreshold && totalPlayCount <= fewPlaysThreshold) {
+                difficultyMultiplier = 0.80; // 速く少ない再生回数で正解 -> もっと難しく
+                console.log("Difficulty up significantly (fast/few plays)");
+            } else if (responseTime > slowResponseThreshold || totalPlayCount > manyPlaysThreshold) {
+                difficultyMultiplier = 0.90; // 遅いか多い再生回数で正解 -> 上昇幅を抑える
+                console.log("Difficulty up slightly (slow/many plays)");
+            } else {
+                console.log("Difficulty up normally");
+            }
+            correctStreak = 0; // 難易度変更したので連続カウントリセット
+        } else {
+            // 連続正解条件を満たしていない場合は難易度変更なし
+            difficultyMultiplier = 1.0;
+            console.log(`Correct, but streak (${correctStreak}/${requiredCorrectStreak}) not met. No difficulty change.`);
         }
-    } else {
-        correctStreak = 0;
-        currentCents = Math.min(maxCents, currentCents * 1.2); // 難易度ダウン
+    } else { // 不正解の場合
+        correctStreak = 0; // 連続正解リセット
+        difficultyMultiplier = 1.20; // 基本の難易度下降率 (セント差を増やす)
+
+        // 回答時間と再生回数で微調整
+        if (responseTime > slowResponseThreshold || totalPlayCount > manyPlaysThreshold) {
+            difficultyMultiplier = 1.30; // 遅いか多い再生回数で不正解 -> もっと簡単に
+            console.log("Difficulty down significantly (slow/many plays)");
+        } else if (responseTime < fastResponseThreshold && totalPlayCount <= fewPlaysThreshold) {
+            difficultyMultiplier = 1.15; // 速く少ない再生回数で不正解 -> 下降幅を抑える（偶然ミスの可能性）
+            console.log("Difficulty down slightly (fast/few plays)");
+        } else {
+             console.log("Difficulty down normally");
+        }
     }
+
+    // 新しいセント差を計算し、範囲内に収める
+    currentCents *= difficultyMultiplier;
     currentCents = Math.max(minCents, Math.min(maxCents, currentCents));
+
+    console.log(`New cents: ${currentCents.toFixed(1)} (Multiplier: ${difficultyMultiplier.toFixed(2)})`);
 }
+
 
 // --- ボタン無効化/有効化ヘルパー ---
 function disableAllButtons() {
@@ -180,17 +227,23 @@ function disableAllButtons() {
 }
 
 function enableButtonsAfterPlayback() {
-    // テストが終了していない場合のみボタンを適切に有効化
-    if (trialCount < maxTrials && !isPlaying) { // isPlaying チェックを追加
-        playFreq1Button.disabled = false; // 音1は常に再生可能（試行中）
-        playFreq2Button.disabled = !freq1Played; // 音1再生済みなら音2を有効化
-        higherButton.disabled = !freq2Played; // 音2再生済みなら回答を有効化
-        lowerButton.disabled = !freq2Played;
+    if (trialCount < maxTrials && !isPlaying) {
+        playFreq1Button.disabled = false;
+        playFreq2Button.disabled = !freq1Played; // 音1再生済みの場合のみ音2有効
+
+        // 音2再生済みの場合のみ回答ボタンを有効化
+        const canAnswer = freq1Played && freq2Played;
+        higherButton.disabled = !canAnswer;
+        lowerButton.disabled = !canAnswer;
+
+        // 回答ボタンが有効になった瞬間を開始時刻とする (まだ記録されていなければ)
+        if (canAnswer && trialStartTime === null) {
+            trialStartTime = performance.now();
+            // console.log("Trial timer started at:", trialStartTime);
+        }
     } else if (trialCount >= maxTrials) {
-        disableAllButtons(); // テスト終了後は全て無効
+        disableAllButtons(); // テスト終了
     }
-    // 注意: 再生中に disableAllButtons が呼ばれるため、
-    // この関数は再生 *終了後* の状態を設定する
 }
 
 // --- テスト終了処理 ---
@@ -219,8 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
             initAudio();
             if (audioContext) {
                 console.log("AudioContext initialized.");
-                setupNextTrial(); // 最初の試行をセットアップ
-                // リスナーを削除
+                setupNextTrial();
                 document.body.removeEventListener('click', initAudioHandler, true);
             } else {
                  feedbackDisplay.textContent = "オーディオ機能の初期化に失敗しました。";
@@ -231,24 +283,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 最初のユーザーインタラクションでAudioContextを初期化
-    // body全体に対するクリックで初期化を試みる
     document.body.addEventListener('click', initAudioHandler, { capture: true, once: true });
 
     // イベントリスナー設定
     playFreq1Button.addEventListener('click', async () => {
         if (audioContext && !isPlaying && trialCount < maxTrials) {
+            playCount1++; // 再生回数カウント
             await playSound(frequency1, soundDuration);
-            freq1Played = true; // 音1再生済みフラグ
+            freq1Played = true;
             enableButtonsAfterPlayback(); // 再生後にボタン状態更新
         }
     });
 
     playFreq2Button.addEventListener('click', async () => {
         if (audioContext && !isPlaying && freq1Played && trialCount < maxTrials) {
+            playCount2++; // 再生回数カウント
             await playSound(frequency2, soundDuration);
-            freq2Played = true; // 音2再生済みフラグ
-            enableButtonsAfterPlayback(); // 再生後にボタン状態更新
+            freq2Played = true;
+            enableButtonsAfterPlayback(); // 再生後にボタン状態更新 & タイマー開始
         }
     });
 
@@ -257,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初期状態
     difficultyDisplay.textContent = currentCents.toFixed(1);
-    trialInfoDisplay.textContent = `試行 0 / ${maxTrials}`; // 初期表示
-    disableAllButtons(); // AudioContext初期化までは全て無効
-    // setupNextTrialはinitAudio成功後に呼ばれる
+    trialInfoDisplay.textContent = `試行 0 / ${maxTrials}`;
+    disableAllButtons();
 });

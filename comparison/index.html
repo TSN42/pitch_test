@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音程比較テスト</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>音程比較テスト</h1>
+
+    <div id="test-area">
+        <div id="instructions">
+            <p>「音1を再生」「音2を再生」ボタンで順番に音を聞いてください。</p>
+            <p>音2 が 音1 より高いと思ったら「高い」、低いと思ったら「低い」ボタンを押してください。</p>
+        </div>
+
+        <div id="controls">
+            <button id="playFreq1" class="control-button">音1を再生</button>
+            <button id="playFreq2" class="control-button" disabled>音2を再生</button>
+            <p>現在の難易度 (セント差): <span id="difficultyDisplay">N/A</span></p>
+            <p id="trialInfo">試行 0 / 0</p> <!-- 試行回数表示用 -->
+        </div>
+
+        <div id="answer-area">
+            <h2>回答</h2>
+            <button id="answerHigher" class="answer-button" disabled>高い</button>
+            <button id="answerLower" class="answer-button" disabled>低い</button>
+        </div>
+
+        <div id="feedback">
+            <!-- 正解・不正解のフィードバック表示エリア -->
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

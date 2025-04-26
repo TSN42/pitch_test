@@ -1,0 +1,110 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+#test-area {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+}
+
+#instructions {
+    margin-bottom: 20px;
+    text-align: left;
+    font-size: 0.9em;
+    color: #555;
+}
+
+#controls, #answer-area {
+    margin-bottom: 25px;
+}
+
+.control-button, .answer-button {
+    padding: 12px 25px;
+    font-size: 1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    margin: 5px;
+    background-color: #007bff;
+    color: white;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    min-width: 100px; /* ボタン幅を揃える */
+}
+
+.control-button:hover, .answer-button:hover {
+    background-color: #0056b3;
+}
+
+.control-button:active, .answer-button:active {
+    transform: scale(0.98);
+}
+
+.control-button:disabled, .answer-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+#answer-area {
+    display: flex;
+    justify-content: center;
+    align-items: center; /* 中央揃えのため */
+    flex-wrap: wrap;
+}
+
+#answer-area h2 {
+    width: 100%; /* 見出しをボタンの上に配置 */
+    margin-bottom: 10px;
+}
+
+.answer-button {
+    background-color: #6c757d; /* 回答ボタンの色を変える */
+    flex-grow: 1; /* ボタンがスペースを埋めるように */
+    max-width: 150px; /* 最大幅を設定 */
+}
+.answer-button:hover:not(:disabled) { /* disabledでないホバー時 */
+    background-color: #5a6268;
+}
+
+#feedback {
+    margin-top: 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+    min-height: 1.5em; /* フィードバック表示エリアの高さを確保 */
+}
+
+#feedback.correct {
+    color: #28a745; /* 緑 */
+}
+
+#feedback.incorrect {
+    color: #dc3545; /* 赤 */
+}
+
+/* フィードバック時のボタン色付け (オプション) */
+.answer-button.feedback-correct {
+    background-color: #28a745 !important;
+    color: white !important;
+    border: none;
+}
+.answer-button.feedback-incorrect {
+    background-color: #dc3545 !important;
+    color: white !important;
+    border: none;
+}
+/* 不正解時に、正解だった方のボタンもハイライト (オプション) */
+.answer-button.feedback-show-correct {
+     background-color: #28a745 !important; /* 正解色 */
+     opacity: 0.8; /* 少し透過させて区別 */
+     color: white !important;
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音程聞き分けテスト</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>音程聞き分けテスト</h1>
+
+    <div id="test-area">
+        <div id="instructions">
+            <p>まず「基準音を再生」ボタンを押して、正解の音を聞いてください。</p>
+            <p>次に、下の選択肢ボタンをそれぞれ押して音を聞き比べ、基準音と同じだと思うものを選択（最後に押したものが選択されます）してから「確定」ボタンを押してください。</p>
+        </div>
+
+        <div id="controls">
+            <button id="playReference" class="control-button">基準音を再生</button>
+            <p>現在の難易度 (セント差): <span id="difficultyDisplay">N/A</span></p>
+        </div>
+
+        <div id="choices-area">
+            <h2>選択肢</h2>
+            <div id="choices">
+                <!-- 選択肢ボタンはJavaScriptで生成されます -->
+            </div>
+        </div>
+
+        <button id="submitAnswer" class="control-button" disabled>確定</button>
+
+        <div id="feedback">
+            <!-- 正解・不正解のフィードバック表示エリア -->
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

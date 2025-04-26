@@ -1,0 +1,136 @@
+/* 既存のスタイルはそのまま */
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+#test-area, #summary, .chart-container /* results.htmlの要素にも適用 */ {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 600px; /* test-area は 600px、他はもう少し広くても良いかも */
+    text-align: center;
+    margin-bottom: 20px; /* 要素間のマージン */
+}
+/* results.html 用の最大幅調整 */
+#summary, .chart-container {
+    max-width: 800px;
+}
+
+
+#instructions {
+    margin-bottom: 20px;
+    text-align: left;
+    font-size: 0.9em;
+    color: #555;
+}
+
+#controls, #choices-area {
+    margin-bottom: 25px;
+}
+
+.control-button, #choices button {
+    padding: 12px 25px;
+    font-size: 1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    margin: 5px;
+    background-color: #007bff;
+    color: white;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.control-button:hover, #choices button:hover {
+    background-color: #0056b3;
+}
+
+.control-button:active, #choices button:active {
+    transform: scale(0.98);
+}
+
+.control-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+#choices {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+#choices button {
+    background-color: #6c757d;
+    min-width: 100px;
+}
+#choices button:hover {
+    background-color: #5a6268;
+}
+
+#choices button.selected {
+    background-color: #ffc107;
+    color: #333;
+    border: 2px solid #e0a800;
+}
+
+#feedback {
+    margin-top: 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+    min-height: 1.5em;
+}
+
+#feedback.correct {
+    color: #28a745;
+}
+
+#feedback.incorrect {
+    color: #dc3545;
+}
+
+#choices button.feedback-correct {
+    background-color: #28a745 !important;
+    color: white !important;
+    border: none;
+}
+#choices button.feedback-incorrect {
+    background-color: #dc3545 !important;
+    color: white !important;
+    border: none;
+}
+
+/* results.html用のスタイル追加 */
+#summary h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+#summary p {
+    margin: 8px 0;
+    color: #555;
+}
+#summary strong, #summary span {
+    color: #000; /* 強調文字やデータ部分は少し濃く */
+}
+
+a.retry-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+}
+a.retry-button:hover {
+    background-color: #0056b3;
+}
